@@ -1,0 +1,124 @@
+# Single Color RGB565 Blob Tracking Example
+#
+# This example shows off single color RGB565 tracking using the OpenMV Cam.
+
+import sensor, image, time, math,array
+
+threshold_index = 0 # 0 for red, 1 for green, 2 for blue
+
+# Color Tracking Thresholds (L Min, L Max, A Min, A Max, B Min, B Max)
+# The below thresholds track in general red/green/blue things. You may wish to tune them...
+thresholds = [(100, 98, -25, 6, -9, 19)] # generic_blue_thresholds
+
+
+from pyb import Pin, Timer
+inverse_left=False  #change it to True to inverse left wheel
+inverse_right=False #change it to True to inverse right wheel
+Rin1 =  Pin('P0', Pin.OUT_PP)
+Rin2 =  Pin('P1', Pin.OUT_PP)
+Lin1 =  Pin('P2', Pin.OUT_PP)
+Lin2 =  Pin('P3', Pin.OUT_PP)
+Rin1.low()
+Rin2.low()
+Lin1.low()
+Lin2.low()
+
+pwma = Pin('P7')
+pwmb = Pin('P8')
+tim = Timer(4, freq=1000)
+chL = tim.channel(1, Timer.PWM, pin=pwma)
+chR = tim.channel(2, Timer.PWM, pin=pwmb)
+chL.pulse_width_percent(0)
+chR.pulse_width_percent(0)
+
+
+sensor.reset()
+sensor.set_pixformat(sensor.RGB565)
+sensor.set_framesize(sensor.QVGA)
+sensor.skip_frames(time = 2000)
+sensor.set_auto_gain(False) # must be turned off for color tracking
+sensor.set_auto_whitebal(False) # must be turned off for color tracking
+clock = time.clock()
+ROIS = [
+        (100, 0, 120, 240), # 你需要为你的应用程序调整权重
+        (130, 0, 170, 40), # 取决于你的机器人是如何设置的。
+        (130, 120, 170, 20)
+       ]
+
+
+r=0
+middle_line = 0
+middle_y = 0
+LX=0
+RX=0
+LY=0
+RY=0
+p=40
+p2=0
+p3=0
+middle_area = 0
+R_area=0
+L_area=0
+sumLR=0
+
+while(True):
+    middle_area = 0
+    middle_y = 0
+    LX=-1
+    RX=-1
+    LY=-1
+    RY=-1
+    R_area=-1
+    L_area=-1
+    sumLR=0    
+    clock.tick()
+    img = sensor.snapshot()
+    #img.draw_rectangle(ROIS[0],color = (100,100,100))
+    #for blob in img.find_blobs([thresholds[threshold_index]], pixels_threshold=100, area_threshold=200, merge=True,roi = ROIS[0] ):
+    ##判斷中間
+        #img.draw_rectangle(blob.rect())
+        #img.draw_cross(blob.cx(), blob.cy())
+        ## Note - the blob rotation is unique to 0-180 only.
+        #img.draw_keypoints([(blob.cx(), blob.cy(), int(math.degrees(blob.rotation())))], size=20)
+        #middle_y = blob.corners()[2][1]
+        #middle_area = int(blob.area()/1000)
+     
+    #img.draw_line(160,0,160,240, color = (255,0,0))
+    #img.draw_line(0,120,320,120, color = (0,255,0))
+    #img.draw_rectangle(160,120,40,40, color = (0,0,255))
+    #print("middle_y=",middle_y)
+
+
+    for blob in img.find_blobs([thresholds[threshold_index]], pixels_threshold=150, area_threshold=200, merge=True,roi = ROIS[1] ):
+    #判斷左邊
+       img.draw_rectangle(blob.rect(),color =(255,55,0))
+       img.draw_cross(blob.cx(), blob.cy())
+       img.draw_keypoints([(blob.cx(), blob.cy(), int(math.degrees(blob.rotation())))], size=20)
+       LX = blob.cx()
+       LY = blob.cy()
+       L_area = blob.area()
+
+
+
+    for blob in img.find_blobs([thresholds[threshold_index]], pixels_threshold=150, area_threshold=200, merge=True,roi = ROIS[2] ):
+    #判斷右邊
+       img.draw_rectangle(blob.rect(),color =(0,55,255))
+       img.draw_cross(blob.cx(), blob.cy())
+       img.draw_keypoints([(blob.cx(), blob.cy(), int(math.degrees(blob.rotation())))], size=20)
+       RX = blob.cx()
+       RY = blob.cy()
+       R_area = blob.area()
+   
+    sumLR = int((RX-LX-25)*1.5)
+    Rin1.low()#右邊
+    Rin2.high()
+    Lin1.low()#左邊   
+    Lin2.high()
+    chL.pulse_width_percent(25-sumLR)#左邊
+    chR.pulse_width_percent(25+sumLR)#右邊    
+    print("LX=",LX)
+    print("RX=",RX)
+    print(sumLR)
+    #print("L_area=",int(L_area/100),"R_area=",int(R_area/100))
+
+ 
