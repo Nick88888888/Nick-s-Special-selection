@@ -1,0 +1,62 @@
+# Single Color RGB565 Blob Tracking Example
+#
+# This example shows off single color RGB565 tracking using the OpenMV Cam.
+
+import sensor, image, time, math
+
+threshold_index = 0 # 0 for red, 1 for green, 2 for blue
+
+# Color Tracking Thresholds (L Min, L Max, A Min, A Max, B Min, B Max)
+# The below thresholds track in general red/green/blue things. You may wish to tune them...
+thresholds = [(11, 46, -38, -11, 113, -94),(39, 0, 6, 121, 113, -16)] # generic_blue_thresholds
+
+sensor.reset()
+sensor.set_pixformat(sensor.RGB565)
+sensor.set_framesize(sensor.QVGA)
+sensor.skip_frames(time = 2000)
+sensor.set_auto_gain(False) # must be turned off for color tracking
+sensor.set_auto_whitebal(False) # must be turned off for color tracking
+clock = time.clock()
+
+# Only blobs that with more pixels than "pixel_threshold" and more area than "area_threshold" are
+# returned by "find_blobs" below. Change "pixels_threshold" and "area_threshold" if you change the
+# camera resolution. "merge=True" merges all overlapping blobs in the image.
+r=0
+g=0
+rx=0
+gx=0
+while(True):
+    r=1
+    g=1
+    rx=0
+    gx=0
+    clock.tick()
+    img = sensor.snapshot()
+    for blob in img.find_blobs([thresholds[0]], pixels_threshold=500, area_threshold=500, merge=True):
+        img.draw_rectangle(blob.rect(),color = (0,255,0))
+        img.draw_cross(blob.cx(), blob.cy())
+        # Note - the blob rotation is unique to 0-180 only.
+        #print("green=",blob.area())
+        g = blob.corners()[2][1]
+        gx = blob.cx()-160
+        img.draw_keypoints([(blob.cx(), blob.cy(), int(math.degrees(blob.rotation())))], size=20)
+    for blob in img.find_blobs([thresholds[1]], pixels_threshold=500, area_threshold=500, merge=True):
+        # These values depend on the blob not being circular - otherwise they will be shaky.
+        img.draw_rectangle(blob.rect(),color  =(255,0,0))
+        img.draw_cross(blob.cx(), blob.cy())
+        #print("red=",blob.area())
+        r = blob.corners()[2][1]
+        rx = blob.cx()-160
+        # Note - the blob rotation is unique to 0-180 only.
+        img.draw_keypoints([(blob.cx(), blob.cy(), int(math.degrees(blob.rotation())))], size=20)  
+    if(r>g):
+        if(rx<0):
+            print("R左",int(1/(r/35)*100),"cm")
+        else:
+            print("R右",int(1/(r/35)*100),"cm")
+    else:
+        if(gx<0):
+            print("G左",int(1/(g/35)*100),"cm")
+        else:
+            print("G右",int(1/(g/35)*100),"cm")
+    

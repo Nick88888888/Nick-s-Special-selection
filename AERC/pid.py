@@ -1,0 +1,53 @@
+from pyb import Pin, Timer
+inverse_left=False  #change it to True to inverse left wheel
+inverse_right=False #change it to True to inverse right wheel
+bin1 =  Pin('P0', Pin.OUT_PP)
+bin2 =  Pin('P1', Pin.OUT_PP)
+ain1 =  Pin('P2', Pin.OUT_PP)
+ain2 =  Pin('P3', Pin.OUT_PP)
+ain1.low()
+ain2.low()
+bin1.low()
+bin2.low()
+
+pwma = Pin('P7')
+pwmb = Pin('P8')
+tim = Timer(4, freq=1000)
+ch1 = tim.channel(1, Timer.PWM, pin=pwma)
+ch2 = tim.channel(2, Timer.PWM, pin=pwmb)
+ch1.pulse_width_percent(0)
+ch2.pulse_width_percent(0)
+
+def run(left_speed, right_speed):
+    if left_speed<0 and right_speed<0:
+        left_speed=(-left_speed)
+        right_speed=(-right_speed)
+        ain1.high()
+        ain2.low()
+        bin1.high()
+        bin2.low()
+        ch1.pulse_width_percent(int(abs(left_speed)))
+        ch2.pulse_width_percent(int(abs(right_speed)))
+    else:
+        if inverse_left==True:
+            left_speed=(-left_speed)
+        if inverse_right==True:
+            right_speed=(-right_speed)
+    
+        if left_speed <0:  
+            left_speed-10
+            ain1.high()
+            ain2.low()
+        else:
+            ain1.low()
+            ain2.high()
+        ch1.pulse_width_percent(int(abs(left_speed)))
+    
+        if right_speed <0:
+            right_speed-10
+            bin1.high()
+            bin2.low()
+        else:
+            bin1.low()
+            bin2.high()
+        ch2.pulse_width_percent(int(abs(right_speed)))

@@ -1,0 +1,22 @@
+//白=1
+void setup() {
+  // put your setup code here, to run once:
+  Serial.begin(19200);
+  for(int i =2;i<=6;i++)
+  {
+    pinMode(i,0);
+  }
+}
+
+void loop() {
+  int x=0;
+  // put your main code here, to run repeatedly:
+  x = !digitalRead(2) + !digitalRead(3)*2 + !digitalRead(4)*4 + !digitalRead(5)*8 + !digitalRead(6)*16;
+  if (Serial.available()) {
+    // Read the most recent byte
+    byte byteRead = Serial.read();
+    Serial.write(x);
+    
+  }
+      
+}
